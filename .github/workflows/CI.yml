@@ -1,0 +1,76 @@
+name: CI
+on:
+  push:
+    branches: [main]
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  # skip intermediate builds: always; cancel intermediate builds: only if it is a pull request build
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+env:
+  # SCTL.jl is not registered: it is developed from GitHub and its C++ shim compiled here, portably
+  SCTL_URL: https://github.com/xuanzhaogao/SCTL.jl
+  SCTL_JL_MARCH: -march=x86-64-v3
+  JULIA_NUM_THREADS: 2
+  OMP_NUM_THREADS: 2
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['lts', '1', 'pre']
+        os: [ubuntu-latest]
+        arch: [x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/cache@v2
+      - name: Develop and build SCTL.jl
+        shell: julia --project=. --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.develop(url = ENV["SCTL_URL"])
+          Pkg.build("SCTL")
+          Pkg.instantiate()
+      - name: Run tests
+        shell: julia --project=. --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.test()
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: write
+      contents: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - name: Install the docs environment
+        shell: julia --project=docs --color=yes {0}
+        run: |
+          using Pkg
+          # both in one call: neither CutPotentials nor SCTL is registered
+          Pkg.develop([PackageSpec(path = pwd()), PackageSpec(url = ENV["SCTL_URL"])])
+          Pkg.build("SCTL")
+          Pkg.instantiate()
+      - name: Build and deploy
+        run: julia --project=docs --color=yes docs/make.jl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

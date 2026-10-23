@@ -1,4 +1,4 @@
-# Run with: julia --project=test test/runtests.jl   (Pkg.test is broken on this machine)
+# Run with: julia --project=. -e "using Pkg; Pkg.test()"   (after developing SCTL.jl: see README / AGENT.md)
 using CutPotentials
 using Test, LinearAlgebra, Printf
 using HCubature: hcubature

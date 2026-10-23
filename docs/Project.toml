@@ -1,0 +1,6 @@
+[deps]
+CutPotentials = "db2d8451-e793-4ffc-b727-f1308538266f"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+
+[compat]
+Documenter = "1"

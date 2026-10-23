@@ -1,5 +1,9 @@
 # CutPotentials.jl
 
+[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://xuanzhaogao.github.io/CutPotentials.jl/dev/)
+[![CI](https://github.com/xuanzhaogao/CutPotentials.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/xuanzhaogao/CutPotentials.jl/actions/workflows/CI.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 CutPotentials.jl evaluates the Newton potential of a smooth density ρ screened by a piecewise-constant coefficient:
 
     U(y) = ∫ G(y, x) a(x) ρ(x) dx,    G = 1/(4π|y − x|),    a = a_j on regions Ω_j, a0 outside.
@@ -123,14 +127,24 @@ region boundaries, each piece weighted by its δa.
 
 ## Installation
 
-SCTL.jl is a local package. `Project.toml` points to it with `[sources] SCTL = {path = "../../sctl_jl/SCTL.jl"}`.
-Adjust that path, or `Pkg.develop` SCTL.jl.
+CutPotentials depends on [SCTL.jl](https://github.com/xuanzhaogao/SCTL.jl). SCTL.jl is not registered, and it
+compiles a C++ shim when built. Develop it first, then add CutPotentials:
 
-Run the tests with:
+```julia
+using Pkg
+Pkg.develop(url = "https://github.com/xuanzhaogao/SCTL.jl")
+Pkg.build("SCTL")        # ENV["SCTL_JL_MARCH"] = "-march=x86-64-v3" for a portable build
+Pkg.add(url = "https://github.com/xuanzhaogao/CutPotentials.jl")
+```
 
-    julia --project=test test/runtests.jl
+`Pkg.add(url = ...)` of SCTL.jl does not work, because of its git submodules. A develop clone builds from pinned
+sources.
 
-`Pkg.test` is broken on this machine. Set `CUTPOT_ONLY=<name>` to run a subset.
+**Tests.** From a clone, with SCTL.jl developed into the project:
+
+    julia -t 8 --project=. -e 'using Pkg; Pkg.test()'
+
+Set `CUTPOT_ONLY=<name>` to run a subset. Contributor notes are in [AGENT.md](AGENT.md).
 
 ## Measured accuracy (test/runtests.jl)
 
@@ -210,3 +224,7 @@ FMMs, so the layer cost grows linearly in the number of densities.
   known. Elements whose patches do not resolve the geometry need `max_size` or more patches (`nsub`).
 - **Platform.** The package is MPI-free and `Float64` only. `ParticleFMM` sums directly below 40,000 targets
   (SCTL's choice).
+
+## License
+
+MIT, see [LICENSE](LICENSE).
