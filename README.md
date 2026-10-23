@@ -21,7 +21,7 @@ $$
 
 A typical use is $a = 1/\varepsilon$, the screened source of a dielectric problem.
 
-![A Gaussian density straddling a sphere (a = 0.2 inside, 1 outside): a, the sphere's surface elements, refined toward the density; b, the potential U on a slice; c, the normal derivative ∂U/∂n at targets on the sphere](docs/src/assets/sphere.png)
+![A Gaussian density straddling a sphere (a = 0.2 inside, 1 outside): a, the sphere's surface elements, refined toward the density (orange: its core); b, the potential U on a slice; c, the normal derivative ∂U/∂n at targets on the sphere](docs/src/assets/sphere.png)
 
 More figures, including where the method stops working (an under-resolved density), are on the
 [examples page](https://xuanzhaogao.github.io/CutPotentials.jl/dev/examples/).

@@ -85,6 +85,10 @@ FMMs, so the layer cost grows linearly in the number of densities.
   [Examples](examples.md#When-the-smooth-field-evaluation-fails). Surface nodes and targets outside the padded box
   use point charges, which are accurate there.
 - **Grading parameters.** The default `L0` and `support` are heuristics; give the density's width and support when
-  known. Elements whose patches do not resolve the geometry need `max_size` or more patches (`nsub`).
+  known. The default `support`, `density_support(src)` (samples above ``10^{-10} \max\rho``), is conservative.
+  Surfaces inside it get uniform elements of size ``\kappa L_0``. A tighter support, such as the density's centre
+  for a Gaussian, grades them with the same accuracy and fewer elements
+  (see [Examples](examples.md#A-density-straddling-a-sphere)). Elements whose patches do not resolve the geometry
+  need `max_size` or more patches (`nsub`).
 - **Platform.** The package is MPI-free and `Float64` only. `ParticleFMM` sums directly below 40,000 targets
   (SCTL's choice).

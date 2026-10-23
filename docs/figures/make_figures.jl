@@ -38,7 +38,10 @@ const HS = 0.1
 const SRC = lattice_source(x -> ρ(G1, x), HS)
 const FIELD = SmoothField(SRC; tol = 1e-12)
 const ITF = [sphere_interface(SPH.b, SPH.R, SPH.ain - SPH.a0)]
-const SQ = SurfaceQuadrature(ITF; support = density_support(SRC), L0 = G1.σ)
+# grade the elements toward the density's centre, as the tests do. The default support of `cut_potential`,
+# density_support(src) (samples above 1e-10 max: ±6.8σ here), contains the whole sphere, so it gives uniform elements
+# of size κ L0: 672 of them against 177, for the same accuracy
+const SQ = SurfaceQuadrature(ITF; support = (G1.c, G1.c), L0 = G1.σ)
 
 function reference_fields(F, Y; hess = false)
     n = size(Y, 2); U = zeros(n); G = zeros(3, n); H = zeros(6, n)
@@ -72,17 +75,27 @@ function sphere_mesh(c, R; nθ = 60, nφ = 120)
 end
 
 # element edges of the surface quadrature, keeping the segments that face the viewer
-function element_edges(sq, eye; m = 10)
+# does the ray from p toward the viewer pass through the ball (c, r)?
+function occluded(p, eye, c, r)
+    w = p .- c; β = dot(w, eye); q = dot(w, w) - r^2
+    disc = β^2 - q
+    return disc > 0 && -β + sqrt(disc) > 0
+end
+
+# element edges of the surface quadrature: the parts on the front of the sphere and not behind the ball `hide`
+function element_edges(sq, eye; m = 12, hide = nothing)
     P = [p for itf in sq.interfaces for p in itf.patches]
     L = Point3f[]
+    vis(p) = dot(p .- collect(SPH.b), eye) > 0 && (hide === nothing || !occluded(p, eye, hide...))
     for e in sq.elems
         f = P[e.patch]
         g(u, v) = CutPotentials._elem_point(f, e, u, v)
         for (a, b) in (((0, 0), (1, 0)), ((1, 0), (1, 1)), ((1, 1), (0, 1)), ((0, 1), (0, 0)))
-            seg = [g(a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t) for t in range(0, 1; length = m)]
-            mid = seg[m ÷ 2]
-            dot(mid .- collect(SPH.b), eye) > 0 || continue
-            append!(L, Point3f.(Tuple.(seg))); push!(L, Point3f(NaN))
+            for t in range(0, 1; length = m)
+                p = g(a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t)
+                push!(L, vis(p) ? Point3f(p...) : Point3f(NaN))
+            end
+            push!(L, Point3f(NaN))
         end
     end
     return L
@@ -110,13 +123,28 @@ function fig_sphere()
                             title = t, titlefont = :regular, limits = lims);
                  hidedecorations!(ax); hidespines!(ax); ax)
 
-    # (a) the interface with its graded elements (refined toward the density, on the +x side)
+    # (a) the sphere, seen as translucent, with its elements (graded toward the density) and the core of the density
+    # (ρ > 0.8 max ρ, a ball of radius σ √(2 ln 1.25) inside the sphere). The front of the sphere is drawn opaque,
+    # each vertex coloured by blending the sphere's colour with what lies behind it along the view ray (the core, by
+    # an analytic ray–ball intersection, or the white background): no translucent triangles, so no seams
     ga = fig[1, 1] = GridLayout()
-    ax = mk3(ga, "sphere (a = 0.2 inside, 1 outside) and its\nelements, graded toward the density")
-    Vs, Ts = sphere_mesh(SPH.b, SPH.R; nθ = 90, nφ = 180)
-    blue = RGBAf(0.66, 0.78, 0.93, 1.0)
+    ax = mk3(ga, "sphere (a = 0.2 inside, 1 outside), its elements,\nand the density (orange: ρ > 0.8 max ρ)")
+    rc = G1.σ * sqrt(2log(1.25)); c = collect(G1.c)
+    blue = RGBAf(0.62, 0.75, 0.92, 1.0); orange = RGBAf(0.96, 0.55, 0.12, 1.0); α = 0.42
+    function seen(p)
+        n = normalize(p .- collect(SPH.b)); fg = shade(blue, n, light)
+        w = p .- c; β = -dot(w, eye); disc = β^2 - (dot(w, w) - rc^2)
+        bg = if disc > 0 && -β - sqrt(disc) > 0
+            hpt = p .- (-β - sqrt(disc)) .* eye; shade(orange, normalize(hpt .- c), light)
+        else
+            RGBAf(1, 1, 1, 1)
+        end
+        return RGBAf(α * fg.r + (1 - α) * bg.r, α * fg.g + (1 - α) * bg.g, α * fg.b + (1 - α) * bg.b, 1)
+    end
+    Vs, Ts = sphere_mesh(SPH.b, SPH.R; nθ = 180, nφ = 360)
+    Ts = [t for t in Ts if dot(sum(collect(Vs[k]) for k in t) ./ 3 .- collect(SPH.b), eye) > -0.02]
     mesh!(ax, [Vs[k][d] for k in eachindex(Vs), d in 1:3], [t[d] for t in Ts, d in 1:3];
-          color = [shade(blue, normalize(collect(v) .- collect(SPH.b)), light) for v in Vs], shading = NoShading)
+          color = [seen(collect(Float64, v)) for v in Vs], shading = NoShading)
     lines!(ax, element_edges(SQ, eye); color = (:black, 0.6), linewidth = 0.6)
     lines!(ax, front_equator(eye); color = :black, linewidth = 1.4, linestyle = :dash)
     panel_label!(ga, "a")
@@ -285,7 +313,7 @@ end
 
 function fig_distance()
     xe = 0.8; a0 = 1.0; box = [((-2.0, -2.0, -2.0), (xe, 2.0, 0.0))]; a = [0.25]
-    sq = SurfaceQuadrature(box_interfaces(box, a, a0); support = density_support(SRC), L0 = G1.σ)
+    sq = SurfaceQuadrature(box_interfaces(box, a, a0); support = (G1.c, G1.c), L0 = G1.σ)
     F(z) = a0 * φ0(G1, z) + (a[1] - a0) * Nbox(G1, z, box[1]...)
     ds = 10.0 .^ range(-14, -1; length = 27)
     exact = ExactField(G1)

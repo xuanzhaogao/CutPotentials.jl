@@ -13,11 +13,12 @@ about ``(0.1, 0, 0.2)``, and ``a_0 = 1`` outside, so the density straddles the i
 src   = VolumeSource(x -> ρ(x), origin, 0.1 * I(3), (n, n, n))
 field = SmoothField(src; tol = 1e-12)
 itf   = [sphere_interface((0.1, 0.0, 0.2), 0.9, 0.2 - 1.0)]   # δa = 0.2 − 1
-sq    = SurfaceQuadrature(itf; support = density_support(src), L0 = 0.5)
+sq    = SurfaceQuadrature(itf; support = (c, c), L0 = 0.5)          # grade toward the centre c
 r     = evaluate(CutPlan(sq, targets; a0 = 1.0, grad = true), field)
 ```
 
-- **a.** The sphere's Gauss–Legendre elements, refined toward the density on the ``+x`` side.
+- **a.** The sphere's Gauss–Legendre elements, with the density's core (orange, ``\rho > 0.8 \max\rho``) inside it.
+  The elements are refined toward the density.
 - **b.** ``U`` on the plane ``z = 0.2``. The coefficient is small inside the sphere, so the potential peaks just
   outside it, on the side where most of the unscreened density lies.
 - **c.** The normal derivative ``\partial U / \partial n`` at targets exactly on the sphere. ``U`` and
@@ -25,11 +26,23 @@ r     = evaluate(CutPlan(sq, targets; a0 = 1.0, grad = true), field)
 
 ![Sphere: the elements, U on a slice, and ∂U/∂n on the surface](assets/sphere.png)
 
+**Grading and `support`.** An element may be at most ``\kappa (d + L_0)`` across, where ``d`` is its distance to
+the box `support`.
+
+- **Toward the centre.** Here `support` is the density's centre, as in the tests. The elements then grow from
+  ``\kappa L_0 = 0.25`` next to the density to ``0.5`` on the far side: 177 elements.
+- **The default is uniform.** The default of [`cut_potential`](@ref), `density_support(src)`, is the box of samples
+  above ``10^{-10} \max\rho``. That is ``\pm 6.8\sigma`` here, and it contains the whole sphere. Then ``d = 0``
+  everywhere, and the elements are uniform at ``\kappa L_0``: 672 of them, varying in size only by the quadtree
+  splitting of the cubed sphere's patches.
+- **Same accuracy.** Both reach the same accuracy, ``3 \times 10^{-13}`` in ``U`` and ``6 \times 10^{-13}`` in
+  ``\nabla U``, off and on the sphere. The graded plan builds in 0.3 s instead of 6.1 s.
+
 ## Accuracy, against the naive approach
 
 The naive approach evaluates the screened samples ``a\rho`` directly with the same smooth-field evaluator (TKM).
 Its error is ``10^{-2}``. CutPotentials' errors in ``U``, ``\nabla U`` and ``\nabla\nabla U`` are
-``4 \times 10^{-13}``, ``6 \times 10^{-13}`` and ``5 \times 10^{-13}``. They are uniform across the interface; the
+``3 \times 10^{-13}``, ``7 \times 10^{-13}`` and ``5 \times 10^{-13}``. They are uniform across the interface; the
 dashed circle marks it.
 
 ![Errors on the slice z = 0.2](assets/errors.png)
