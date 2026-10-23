@@ -10,7 +10,7 @@ makedocs(;
     sitename = "CutPotentials.jl",
     format = Documenter.HTML(; prettyurls = get(ENV, "CI", "false") == "true",
                              canonical = "https://xuanzhaogao.github.io/CutPotentials.jl", edit_link = "main"),
-    pages = ["Home" => "index.md", "Method" => "method.md", "Usage" => "usage.md", "Examples" => "examples.md",
+    pages = ["Home" => "index.md", "Method" => "method.md", "NUFFT derivatives" => "nufft.md", "Usage" => "usage.md", "Examples" => "examples.md",
              "Accuracy and cost" => "accuracy.md",
              "API" => "api.md"],
 )

@@ -344,8 +344,86 @@ function fig_distance()
     return fig
 end
 
-which = isempty(ARGS) ? ["sphere", "errors", "resolution", "distance"] : ARGS
+# ---------------------------------------------------------------------------------------------------------------
+# the gathering window: its derivatives at the end of the support, and the error against its width
+
+# move the coordinates of y so that each lies δ (in fine-grid units) past a stencil transition of field f: the last
+# point of the stencil is then δ from the end of the window's support
+function transition_target(f, y, δ)
+    g = f.geom; ns = f.win.ns; y2 = copy(y)
+    for d in 1:3
+        nf = f.nf[d]; x = g.dks[d] * (y[d] - g.center[d]) / (2π) + 0.5
+        j = floor(x); u = (x - j) * nf
+        u2 = floor(u - ns / 2) + ns / 2 + δ
+        y2[d] = g.center[d] + 2π * ((u2 / nf + j) - 0.5) / g.dks[d]
+    end
+    return y2
+end
+
+function fig_window()
+    fig = Figure(size = (1450, 520))
+    # (a) |w|, |w′|, |w″| against the distance 1 - |z| to the end of the support, ns = 18, σ = 1.5
+    ga = fig[1, 1] = GridLayout()
+    ax = Axis(ga[1, 1]; xscale = log10, yscale = log10, xlabel = "distance 1 − |z| to the end of the support",
+              ylabel = "|w|, |w′|, |w″|  (grid units)", title = "the ES window near its support end (ns = 18, σ = 1.5)",
+              limits = ((1e-12, 0.5), (1e-40, 1e4)), xticks = (10.0 .^ (-12:3:-3), ["10⁻¹²", "10⁻⁹", "10⁻⁶", "10⁻³"]),
+              yticks = (10.0 .^ (-40:10:0), ["10⁻⁴⁰", "10⁻³⁰", "10⁻²⁰", "10⁻¹⁰", "1"]))
+    sz = 10.0 .^ range(-12, log10(0.5); length = 400)
+    for (m, sty, lab) in ((0, :dash, "untapered ES"), (3, :solid, "ES · (1 − z²)³"))
+        win = CutPotentials._Window(18, 0.97π * 18 * (1 - 1 / 3), m)
+        W = [CutPotentials._window_eval(win, (1 - s) * 9.0) for s in sz]
+        for (k, (col, d)) in enumerate(((:black, "w"), (:royalblue, "w′"), (:crimson, "w″")))
+            lines!(ax, sz, max.(abs.(getindex.(W, k)), 1e-300); color = col, linestyle = sty, linewidth = 2,
+                   label = "$d, $lab")
+        end
+    end
+    axislegend(ax; position = :rb, framevisible = false, nbanks = 2, labelsize = 14)
+    panel_label!(ga, "a")
+
+    # (b) error of the gathered φ0, ∇φ0, ∇∇φ0 against the width, at random targets and at stencil transitions
+    Y0 = reduce(hcat, [collect(G1.c) .+ [1.3cos(k), 1.1sin(k), 0.7cos(3k)] .* (k / 20) for k in 1:60])
+    E = field_values(ExactField(G1), Y0)
+    rel(x, r) = maximum(abs, x .- r) / maximum(abs, r)
+    nss = 8:24
+    res = Dict{Tuple{Int, Symbol}, Vector{NTuple{3, Float64}}}()
+    for m in (0, 3), ns in nss
+        f = SmoothField(SRC; tol = 1e-14, window_ns = ns, window_taper = m)
+        V = field_values(f, Y0)
+        Yt = reduce(hcat, [transition_target(f, Y0[:, j], 1e-9) for j in axes(Y0, 2)])
+        Et = field_values(ExactField(G1), Yt); Vt = field_values(f, Yt)
+        push!(get!(res, (m, :random), NTuple{3, Float64}[]), (rel(V.pot, E.pot), rel(V.grad, E.grad), rel(V.hess, E.hess)))
+        push!(get!(res, (m, :transition), NTuple{3, Float64}[]),
+              (rel(Vt.pot, Et.pot), rel(Vt.grad, Et.grad), rel(Vt.hess, Et.hess)))
+        @info @sprintf("window: m = %d ns = %2d  random %.1e %.1e %.1e   transitions %.1e %.1e %.1e", m, ns,
+                       res[(m, :random)][end]..., res[(m, :transition)][end]...)
+    end
+    gb = fig[1, 2] = GridLayout()
+    ax = Axis(gb[1, 1]; yscale = log10, xlabel = "window width ns (points per dimension)",
+              ylabel = "max error / max |exact|", title = "error of the gathered fields (σ = 1.5)",
+              limits = ((7.5, 24.5), (1e-14, 1e2)), xticks = 8:2:24,
+              yticks = (10.0 .^ (-14:4:2), ["10⁻¹⁴", "10⁻¹⁰", "10⁻⁶", "10⁻²", "10²"]))
+    for (ns, lab) in ((16, "1e-8"), (18, "1e-10"), (20, "1e-12"))
+        vlines!(ax, [ns]; color = :gray70, linestyle = :dot)
+        text!(ax, ns - 0.15, 2e-14; text = "default at tol " * lab, rotation = π / 2, align = (:left, :bottom),
+              fontsize = 13, color = :gray40)
+    end
+    for (k, col, q) in ((1, :black, "φ₀"), (2, :royalblue, "∇φ₀"), (3, :crimson, "∇∇φ₀"))
+        lines!(ax, nss, max.(getindex.(res[(3, :random)], k), 1e-17); color = col, linewidth = 2,
+               label = "$q, tapered")
+        lines!(ax, nss, max.(getindex.(res[(0, :transition)], k), 1e-17); color = col, linestyle = :dash,
+               linewidth = 2, label = "$q, untapered, at stencil transitions")
+    end
+    scatter!(ax, nss, max.(getindex.(res[(3, :transition)], 3), 1e-17); color = :crimson, marker = :circle,
+             markersize = 7, label = "∇∇φ₀, tapered, at stencil transitions")
+    Legend(gb[1, 2], ax; framevisible = false, labelsize = 14)
+    panel_label!(gb, "b")
+    save(joinpath(OUT, "window.png"), fig; px_per_unit = 1.5)
+    return fig
+end
+
+which = isempty(ARGS) ? ["sphere", "errors", "resolution", "distance", "window"] : ARGS
 "sphere" in which && fig_sphere()
 "errors" in which && fig_errors()
 "resolution" in which && fig_resolution()
 "distance" in which && fig_distance()
+"window" in which && fig_window()

@@ -54,6 +54,27 @@ want("smooth field") && @testset "smooth field (TKM near, FMM far) against the e
     e = (relerr(V.pot, E.pot), relerr(V.grad, E.grad), relerr(V.hess, E.hess))
     report("smooth field", e)
     @test all(e .< 1e-10)
+    # the window: an explicit width reproduces the default rule's; without the taper the Hessian is wrong
+    @test FIELD.win.ns == 20 && FIELD.win.m == 3
+    V20 = field_values(SmoothField(SRC; tol = 1e-12, window_ns = 20), Y)
+    @test V20.hess ≈ V.hess rtol = 1e-14
+    # targets whose stencils end 1e-9 (grid units) before the window's support ends: the untapered window's w″ is
+    # singular there, the tapered one's vanishes
+    function transition_target(f, y, δ)
+        g = f.geom; ns = f.win.ns; y2 = copy(y)
+        for d in 1:3
+            nf = f.nf[d]; x = g.dks[d] * (y[d] - g.center[d]) / (2π) + 0.5
+            j = floor(x); u = (x - j) * nf
+            y2[d] = g.center[d] + 2π * (((floor(u - ns / 2) + ns / 2 + δ) / nf + j) - 0.5) / g.dks[d]
+        end
+        return y2
+    end
+    F0 = SmoothField(SRC; tol = 1e-12, window_taper = 0)
+    Yt = reduce(hcat, [transition_target(FIELD, Y[:, j], 1e-9) for j in axes(Y, 2)])
+    Et = field_values(EXACT, Yt)
+    @test relerr(field_values(FIELD, Yt).hess, Et.hess) < 1e-10
+    @test relerr(field_values(F0, Yt).hess, Et.hess) > 1e-3
+    @test_throws ArgumentError SmoothField(SRC; window_ns = 1)
 end
 
 want("box regions") && @testset "box regions: erf/heat-kernel reference" begin

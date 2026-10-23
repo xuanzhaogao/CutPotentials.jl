@@ -170,7 +170,8 @@ end
 
 """
     SmoothField(src::VolumeSource; tol = 1e-10, c_pad = 5.0, kmax = nothing, window_sigma = 1.5,
-                window_tol = tol * 1e-4, far_digits = nothing, nthreads = min(16, Threads.nthreads()))
+                window_tol = tol * 1e-4, window_ns = nothing, window_taper = 3, far_digits = nothing,
+                nthreads = min(16, Threads.nthreads()))
 
 The free-space Newton potential φ0 = N[ρ] (kernel 1/(4π|y - x|)) of the full, unscreened density of `src`, with its
 gradient ψ and Hessian H, ready for evaluation at any points ([`field_values`](@ref)).
@@ -178,8 +179,12 @@ gradient ψ and Hessian H, ready for evaluation at any points ([`field_values`](
 - **Near the samples** (inside the source box padded by `c_pad · ‖basis‖₂`): the truncated-kernel method. A type-1
   NUFFT (FINUFFT, accuracy `tol`) of the charges, times the truncated Laplace kernel 2 (sin(Lk/2)/k)² for |k| ≤
   `kmax` (default `π/h_min`), on one real scalar fine grid (oversampling `window_sigma`). Potential, gradient and
-  Hessian are gathered from that grid with the window w, w′ and w″ of an analytic ES window tapered by (1 - z²)³
-  (`window_tol` sets its width).
+  Hessian are gathered from that grid with the window w, w′ and w″ of an analytic ES window tapered by
+  (1 - z²)^`window_taper`. Its width is FINUFFT's ES rule at the accuracy `window_tol`
+  (`ns = ⌈ln(1/window_tol) / (π √(1 - 1/window_sigma))⌉`, 16 / 18 / 20 points at `tol` 1e-8 / 1e-10 / 1e-12), or
+  `window_ns` when given; its shape is `β = 0.97 π ns (1 - 1/(2 window_sigma))`. The taper makes w′ and w″ vanish
+  continuously at the ends of the support; without it (`window_taper = 0`) they are singular there and the Hessian
+  is wrong.
 - **Elsewhere**: point charges `weights .* density` by SCTL's FMM (`Laplace3D_FxU`, `_FxdU`, `_Fxd2U`) at
   `far_digits` digits (default `-log10(tol) + 5`, at most 15).
 
@@ -200,9 +205,12 @@ end
 
 function SmoothField(src::VolumeSource; tol::Real = 1e-10, c_pad::Real = 5.0, kmax::Union{Nothing, Real} = nothing,
                      window_sigma::Real = 1.5, window_tol::Union{Nothing, Real} = nothing,
+                     window_ns::Union{Nothing, Integer} = nothing, window_taper::Integer = 3,
                      far_digits::Union{Nothing, Integer} = nothing, nthreads::Integer = min(16, Threads.nthreads()))
     tol > 0 || throw(ArgumentError("tol must be positive"))
     window_sigma > 1 || throw(ArgumentError("window_sigma must be > 1"))
+    window_taper >= 0 || throw(ArgumentError("window_taper must be ≥ 0"))
+    window_ns === nothing || window_ns >= 2 || throw(ArgumentError("window_ns must be ≥ 2"))
     g = _near_geometry(src, c_pad)
     km = kmax === nothing ? π / _shortest_lattice_vector(src.basis) : Float64(kmax)
     ks = ntuple(d -> _centered_mode_axis(g.dks[d], km), 3)
@@ -213,7 +221,10 @@ function SmoothField(src::VolumeSource; tol::Real = 1e-10, c_pad::Real = 5.0, km
     c = FINUFFT.nufft3d1(xs[1], xs[2], xs[3], charges, -1, Float64(tol), nmodes...; nthreads = Int(nthreads))
     c = ndims(c) == 4 ? dropdims(c; dims = 4) : c
     _truncated_kernel_multiply!(c, ks..., km, g.L)
-    win = _window_params(window_tol === nothing ? tol * 1e-4 : window_tol, window_sigma)
+    win = _window_params(window_tol === nothing ? tol * 1e-4 : window_tol, window_sigma; taper = Int(window_taper))
+    if window_ns !== nothing
+        win = _Window(Int(window_ns), 0.97 * π * window_ns * (1 - 1 / (2 * window_sigma)), Int(window_taper))
+    end
     grid, nf = _window_grid(c, win, Float64(window_sigma))
     alpha = ntuple(d -> nf[d] * g.dks[d] / (2π), 3)
     pref = g.dks[1] * g.dks[2] * g.dks[3] / (2π)^3

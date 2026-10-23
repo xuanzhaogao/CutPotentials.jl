@@ -22,7 +22,8 @@ The smooth fields ``\varphi_0 = N[\rho]``, ``\psi = \nabla \varphi_0`` and ``H =
 - **Inside the padded source box:** the truncated-kernel method. A type-1 NUFFT (FINUFFT) of the samples is
   multiplied by the truncated Laplace kernel ``2\,(\sin(Lk/2)/k)^2`` and placed on one real scalar fine grid.
   ``\varphi_0``, ``\psi`` and ``H`` are then gathered from that grid with the window and its first two derivatives,
-  ``w``, ``w'`` and ``w''``. The window is an analytic ES window tapered by ``(1 - z^2)^3``.
+  ``w``, ``w'`` and ``w''``. The window is an analytic ES window tapered by ``(1 - z^2)^3``; see
+  [Derivatives through the NUFFT](nufft.md) for the window and its width.
 - **Elsewhere:** point charges, summed by SCTL's `ParticleFMM` (`Laplace3D_FxU`, `_FxdU`, `_Fxd2U`).
 
 ## Identities

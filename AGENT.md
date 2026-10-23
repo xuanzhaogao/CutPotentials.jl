@@ -25,7 +25,7 @@ The derivation is in `docs/src/method.md`. Read it before changing any formula.
 | `src/surfaces.jl` | `Interface`, `rectangle_patch`, `box_interfaces`, `sphere_interface`, `ellipsoid_interface`, `SurfaceQuadrature` |
 | `src/plan.jl` | `CutPlan` (near corrections, FMM trees), `evaluate`, `cut_potential` |
 | `test/runtests.jl`, `test/references.jl` | accuracy tests against independent references (erf/heat kernels, adaptive cubature) |
-| `docs/` | Documenter site: `make.jl`; `src/` holds index, method, usage, examples, accuracy, api; `figures/` the figure script |
+| `docs/` | Documenter site: `make.jl`; `src/` holds index, method, nufft, usage, examples, accuracy, api; `figures/` the figure script |
 | `.github/workflows/CI.yml` | tests on Julia lts / 1 / pre and a docs build + deploy |
 
 ## Dependencies: SCTL.jl is not registered
@@ -75,7 +75,7 @@ julia --project=docs docs/make.jl
 - **Docstrings.** `api.md` collects all of them with `@autodocs`. Every exported name needs a docstring.
 - **Figures.** The images on the Examples page (`docs/src/assets/*.png`) are committed files. They are made by
   `docs/figures/make_figures.jl` (CairoMakie, a few minutes at 16 threads), not by the docs build. Rerun it
-  (optionally `make_figures.jl sphere errors resolution distance`) when a change affects them, in an environment from
+  (optionally `make_figures.jl sphere errors resolution distance window`) when a change affects them, in an environment from
   `docs/figures/Project.toml` with CutPotentials and SCTL.jl developed.
 
 ## Conventions
