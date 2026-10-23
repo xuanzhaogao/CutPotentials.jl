@@ -7,6 +7,9 @@ From `test/runtests.jl`.
 - **Errors.** Each entry is the max error over the targets divided by the max ``|\text{reference}|``.
 - **Density.** ``\rho`` is a Gaussian (``\sigma = 0.5``), sampled on a skewed, anisotropic lattice (spacing about ``0.1``).
 - **Settings.** The smooth field uses tol 1e-12. The surface elements use order 12 and κ = 0.5.
+- **Floor.** The skewed lattice cuts the Gaussian at about ``7\sigma`` in one corner, which limits the smooth field
+  to about ``10^{-11}``. With the tail inside the box (``\pm 8\sigma``) it reaches ``10^{-13}``, as in the
+  [examples](examples.md).
 - **Two field sources.** "TKM" is the full pipeline. "Exact" feeds the exact ``\psi`` and ``H``, to isolate the surface part.
 
 | case (reference) | targets | pot | grad | hess |
@@ -76,7 +79,11 @@ FMMs, so the layer cost grows linearly in the number of densities.
 - **Per-target-set setup.** The near corrections depend on the targets. Many targets close to large surfaces cost
   memory: about 1 GB per 1e7 near-pair nonzeros, three times that for the Hessian kernel.
 - **The density must be resolved by its samples** and decayed at the edge of the sample box, which is the TKM
-  assumption. Surface nodes and targets outside the padded box use point charges, which are accurate there.
+  assumption. The error is about ``|\hat\rho(\pi/h)|``, ``e^{-\sigma^2\pi^2/2h^2}`` for a Gaussian, plus the
+  mass the box leaves out. That is ``10^{-10}`` at ``h = \sigma/2`` and ``10^{-3}`` at ``h = \sigma``. The
+  surface corrections remove only the error that screening adds, not under-resolution. See
+  [Examples](examples.md#When-the-smooth-field-evaluation-fails). Surface nodes and targets outside the padded box
+  use point charges, which are accurate there.
 - **Grading parameters.** The default `L0` and `support` are heuristics; give the density's width and support when
   known. Elements whose patches do not resolve the geometry need `max_size` or more patches (`nsub`).
 - **Platform.** The package is MPI-free and `Float64` only. `ParticleFMM` sums directly below 40,000 targets

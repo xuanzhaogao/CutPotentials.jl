@@ -16,14 +16,15 @@ $$
   parametric patches.
 - **Targets.** A target can be anywhere: in the volume, near an interface, or exactly on one, including edges and
   junctions.
-- **Accuracy.** Errors are about 1e-10 to 1e-11 relative to the largest value, where evaluating $a\rho$ directly
-  with FFTs or point charges only reaches 1e-1 to 1e-2.
+- **Accuracy.** Errors reach about 1e-13 relative to the largest value, when the samples resolve ρ. Evaluating
+  $a\rho$ directly with FFTs or point charges reaches only 1e-2.
 
 A typical use is $a = 1/\varepsilon$, the screened source of a dielectric problem.
 
-![Four boxes along an edge: the field on a slice, and the errors of a naive evaluation and of CutPotentials](docs/src/assets/boxes_slice.png)
+![A Gaussian density straddling a sphere (a = 0.2 inside, 1 outside): a, the sphere's surface elements, refined toward the density; b, the potential U on a slice; c, the normal derivative ∂U/∂n at targets on the sphere](docs/src/assets/sphere.png)
 
-More figures are on the [examples page](https://xuanzhaogao.github.io/CutPotentials.jl/dev/examples/).
+More figures, including where the method stops working (an under-resolved density), are on the
+[examples page](https://xuanzhaogao.github.io/CutPotentials.jl/dev/examples/).
 
 ## Installation
 
