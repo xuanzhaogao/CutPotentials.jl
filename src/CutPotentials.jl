@@ -1,11 +1,13 @@
-"""
+@doc raw"""
     CutPotentials
 
 Newton potentials of a smooth density screened by a piecewise-constant coefficient,
 
-    U(y) = ∫ G(y, x) a(x) ρ(x) dx,    G = 1/(4π|y - x|),   a = a_j on regions Ω_j, a0 outside,
+```math
+U(y) = \int G(y, x)\, a(x)\, \rho(x)\, dx, \qquad G(y, x) = \frac{1}{4\pi |y - x|},
+```
 
-with ∇U and ∇∇U, at arbitrary targets (inside or outside the regions, near or on their surfaces). Every spectral or
+with ``a = a_j`` on the regions ``\Omega_j`` and ``a_0`` outside, and its derivatives ∇U and ∇∇U, at arbitrary targets (inside or outside the regions, near or on their surfaces). Every spectral or
 point-charge computation acts on the smooth, unscreened ρ ([`SmoothField`](@ref): TKM near the samples, SCTL FMM
 elsewhere); the jumps of aρ become surface integrals of the smooth fields φ0 = N[ρ], ψ = ∇φ0, H = ∇ψ over the
 interfaces ([`Interface`](@ref), [`SurfaceQuadrature`](@ref): SCTL Gauss-Legendre elements graded toward the

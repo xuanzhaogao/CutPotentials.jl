@@ -9,7 +9,7 @@ closed parameter square, whose normal `∂X/∂u × ∂X/∂v` points **from sid
 SCTL Gauss-Legendre elements after refinement ([`SurfaceQuadrature`](@ref)).
 
 The interfaces given to [`SurfaceQuadrature`](@ref) must together form the boundaries of the regions: for each
-region Ω_j (coefficient a_j, background a_0 outside all of them), its closed boundary ∂Ω_j, oriented outward, is
+region `Ω_j` (coefficient `a_j`, background `a_0` outside all of them), its closed boundary `∂Ω_j`, oriented outward, is
 covered by pieces whose δa (with orientation) adds up to the region-by-region sum
 `Σ_j (a_j - a_0) [∂Ω_j]`. A face shared by two regions is given once, with `δa = a_A - a_B`; faces with
 `δa = 0` can be dropped. Constructors: [`box_interfaces`](@ref), [`sphere_interface`](@ref),

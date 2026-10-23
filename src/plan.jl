@@ -99,20 +99,25 @@ function _layer(fmm, C::SparseMatrixCSC, w::Vector{Float64}, f::AbstractVector{F
     return U
 end
 
-"""
+@doc raw"""
     evaluate(plan::CutPlan, field::SmoothField) -> (; pot, grad, hess, coef, timings)
 
-`U(y) = ∫ G(y, x) a(x) ρ(x) dx` (G = 1/(4π|y - x|)) at the plan's targets, with `grad = ∇U` (`3 × Nt`) and
+``U(y) = \int G(y, x)\, a(x)\, \rho(x)\, dx`` (``G = 1/(4\pi|y - x|)``) at the plan's targets, with `grad = ∇U` (`3 × Nt`) and
 `hess = ∇∇U` (`6 × Nt`, rows ∂xx, ∂yy, ∂zz, ∂xy, ∂xz, ∂yz), those not requested `nothing`. `coef` is the
-coefficient the formulas see at each target, `a0 - W(y)` with `W = Σ_m δa_m D_m[1]`: a(y) off the interfaces,
-(a_A + a_B)/2 on a smooth point of an interface, Σ_j α_j a_j (solid-angle fractions) at edges and corners.
+coefficient the formulas see at each target, ``a_0 - W(y)`` with ``W = \sum_m \delta a_m D_m[1]``: ``a(y)`` off the interfaces,
+``(a_A + a_B)/2`` on a smooth point of an interface, ``\sum_j \alpha_j a_j`` (solid-angle fractions) at edges and corners.
 
 With φ0, ψ = ∇φ0 and H = ∇ψ from `field` (the full, smooth density), the merged identities (Green's third identity
 per region, the two copies of each shared face combined, W from the same quadrature) are
 
-    U   = (a0 - W) φ0 + Σ_m δa_m (D_m[φ0] - S_m[ψ·n])
-    ∇U  = (a0 - W) ψ  + Σ_m δa_m (D_m[ψ]  - S_m[H n - tr(H) n])
-    ∇∂_iU = (a0 - W) H e_i + Σ_m δa_m (∇×S_m[n × H e_i] - ∇S_m[(H n)_i - tr(H) n_i])
+```math
+\begin{aligned}
+U &= (a_0 - W)\, \varphi_0 + \sum_m \delta a_m \big(D_m[\varphi_0] - S_m[\psi \cdot n]\big), \\
+\nabla U &= (a_0 - W)\, \psi + \sum_m \delta a_m \big(D_m[\psi] - S_m[H n - \operatorname{tr}(H)\, n]\big), \\
+\partial_i \nabla U &= (a_0 - W)\, H e_i + \sum_m \delta a_m \big(\nabla\times S_m[n \times H e_i]
+  - \nabla S_m[(H n)_i - \operatorname{tr}(H)\, n_i]\big),
+\end{aligned}
+```
 
 all from nodal values of φ0, ψ, H on the surface elements (no differentiation on panels). The first two equal
 `a0 φ0 + Σ δa D[φ0 - φ0(y)] - ...`, whose double layers have densities vanishing at y: continuous through the

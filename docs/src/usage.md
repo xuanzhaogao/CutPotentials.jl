@@ -12,8 +12,8 @@ r     = evaluate(plan, field)            # r.pot (Nt), r.grad (3×Nt), r.hess (6
 ```
 
 **General surfaces.** `Interface(patches, δa)` takes any closed-surface pieces. Each patch is a function
-`X(u, v)` on [0, 1]², with ∂uX × ∂vX pointing from side A to side B. Together, the interfaces must make up the
-region boundaries, each piece weighted by its δa.
+``X(u, v)`` on ``[0, 1]^2``, with ``\partial_u X \times \partial_v X`` pointing from side A to side B. Together, the
+interfaces must make up the region boundaries, each piece weighted by its ``\delta a = a_A - a_B``.
 
 **Shortcut.** `cut_potential(src, itf, targets; a0, ...)` does all four steps at once.
 

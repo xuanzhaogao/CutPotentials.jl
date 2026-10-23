@@ -1,6 +1,6 @@
 # CutPotentials.jl
 
-CutPotentials.jl evaluates the Newton potential of a smooth density ρ screened by a piecewise-constant coefficient,
+CutPotentials.jl evaluates the Newton potential of a smooth density ``\rho`` screened by a piecewise-constant coefficient,
 
 ```math
 U(y) = \int G(y, x)\, a(x)\, \rho(x)\, dx, \qquad G = \frac{1}{4\pi |y - x|}, \qquad a = a_j \text{ on } \Omega_j,\ a_0 \text{ outside},
@@ -8,13 +8,13 @@ U(y) = \int G(y, x)\, a(x)\, \rho(x)\, dx, \qquad G = \frac{1}{4\pi |y - x|}, \q
 
 together with ``\nabla U`` and the Hessian ``\nabla\nabla U``.
 
-- **Density.** ρ is given by samples on a lattice, which may be anisotropic or skewed.
+- **Density.** ``\rho`` is given by samples on a lattice, which may be anisotropic or skewed.
 - **Regions.** The ``\Omega_j`` are bounded by closed surfaces of any shape: unions of boxes, spheres, ellipsoids,
   or any parametrized patches.
 - **Targets.** A target can be anywhere: in the volume, near a surface, or exactly on one, including on edges and
   junctions for ``U`` and ``\nabla U``.
 
-All volume work is done on the smooth, unscreened ρ (truncated-kernel method with
+All volume work is done on the smooth, unscreened ``\rho`` (truncated-kernel method with
 [FINUFFT](https://github.com/flatironinstitute/finufft), point charges with
 [SCTL](https://github.com/xuanzhaogao/SCTL.jl)'s FMM). The jumps of ``a\rho`` become surface integrals of known
 smooth data, discretized with SCTL's Gauss–Legendre elements and singular/near-singular corrections. See

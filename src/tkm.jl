@@ -177,7 +177,7 @@ gradient ψ and Hessian H, ready for evaluation at any points ([`field_values`](
 
 - **Near the samples** (inside the source box padded by `c_pad · ‖basis‖₂`): the truncated-kernel method. A type-1
   NUFFT (FINUFFT, accuracy `tol`) of the charges, times the truncated Laplace kernel 2 (sin(Lk/2)/k)² for |k| ≤
-  `kmax` (default π/h_min), on one real scalar fine grid (oversampling `window_sigma`). Potential, gradient and
+  `kmax` (default `π/h_min`), on one real scalar fine grid (oversampling `window_sigma`). Potential, gradient and
   Hessian are gathered from that grid with the window w, w′ and w″ of an analytic ES window tapered by (1 - z²)³
   (`window_tol` sets its width).
 - **Elsewhere**: point charges `weights .* density` by SCTL's FMM (`Laplace3D_FxU`, `_FxdU`, `_Fxd2U`) at

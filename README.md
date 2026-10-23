@@ -4,20 +4,22 @@
 [![CI](https://github.com/xuanzhaogao/CutPotentials.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/xuanzhaogao/CutPotentials.jl/actions/workflows/CI.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-CutPotentials.jl computes the potential, gradient and Hessian of a smooth 3D density ρ screened by a
-piecewise-constant coefficient a:
+CutPotentials.jl computes the potential, gradient and Hessian of a smooth 3D density $\rho$ screened by a
+piecewise-constant coefficient $a$:
 
-    U(y) = ∫ a(x) ρ(x) / (4π |y − x|) dx,    a = a_j in region Ω_j,  a0 outside.
+$$
+U(y) = \int \frac{a(x)\, \rho(x)}{4\pi |y - x|}\, dx, \qquad a = a_j \text{ in region } \Omega_j, \quad a = a_0 \text{ outside}.
+$$
 
-- **Density.** ρ is given as samples on a lattice, which may be anisotropic or skewed.
+- **Density.** $\rho$ is given as samples on a lattice, which may be anisotropic or skewed.
 - **Regions.** The regions can be any closed surfaces: unions of boxes, spheres, ellipsoids, or user-supplied
   parametric patches.
 - **Targets.** A target can be anywhere: in the volume, near an interface, or exactly on one, including edges and
   junctions.
-- **Accuracy.** Errors are about 1e-10 to 1e-11 relative to the largest value, where evaluating aρ directly with
-  FFTs or point charges only reaches 1e-1 to 1e-2.
+- **Accuracy.** Errors are about 1e-10 to 1e-11 relative to the largest value, where evaluating $a\rho$ directly
+  with FFTs or point charges only reaches 1e-1 to 1e-2.
 
-A typical use is a = 1/ε, the screened source of a dielectric problem.
+A typical use is $a = 1/\varepsilon$, the screened source of a dielectric problem.
 
 ## Installation
 
@@ -39,7 +41,7 @@ using CutPotentials
 # Gaussian density sampled on a 41³ lattice with spacing 0.1
 src = VolumeSource(x -> exp(-sum(abs2, x) / 0.5), (-2.0, -2.0, -2.0), 0.1 .* [1 0 0; 0 1 0; 0 0 1], (41, 41, 41))
 
-# a = 2 inside the box [-0.5, 0.5]³ and a0 = 1 outside
+# a = 2 inside the box [-0.5, 0.5]^3 and a0 = 1 outside
 itf = box_interfaces([((-0.5, -0.5, -0.5), (0.5, 0.5, 0.5))], [2.0], 1.0)
 
 r = cut_potential(src, itf, randn(3, 100); a0 = 1.0, tol = 1e-10, hess = true)
@@ -60,13 +62,13 @@ Hessians and the accuracy settings.
 
 ## How it works
 
-The method never evaluates the discontinuous aρ.
+The method never evaluates the discontinuous $a\rho$.
 
-- **Smooth fields.** The volume part is computed only for the smooth ρ. Near the samples this uses the
+- **Smooth fields.** The volume part is computed only for the smooth $\rho$. Near the samples this uses the
   truncated-kernel method, with [FINUFFT](https://github.com/flatironinstitute/finufft); elsewhere it uses
   point charges summed by SCTL's FMM.
-- **Interfaces.** Green's identities, plus Maue's identity for the Hessian, turn each jump of a into single- and
-  double-layer integrals of those smooth fields.
+- **Interfaces.** Green's identities, plus Maue's identity for the Hessian, turn each jump of $a$ into single-
+  and double-layer integrals of those smooth fields.
 - **Surface integrals.** These are computed on SCTL's Gauss–Legendre surface elements, with its corrections for
   nearby and on-surface targets.
 
