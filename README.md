@@ -21,6 +21,10 @@ $$
 
 A typical use is $a = 1/\varepsilon$, the screened source of a dielectric problem.
 
+![Four boxes along an edge: the field on a slice, and the errors of a naive evaluation and of CutPotentials](docs/src/assets/boxes_slice.png)
+
+More figures are on the [examples page](https://xuanzhaogao.github.io/CutPotentials.jl/dev/examples/).
+
 ## Installation
 
 CutPotentials depends on [SCTL.jl](https://github.com/xuanzhaogao/SCTL.jl). SCTL.jl is not registered, and it

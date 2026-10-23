@@ -1,0 +1,8 @@
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+CutPotentials = "db2d8451-e793-4ffc-b727-f1308538266f"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SCTL = "ac9f61ce-527e-4020-a439-f70cd5e361ae"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
