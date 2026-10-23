@@ -169,7 +169,7 @@ want("rotated ellipsoid") && @testset "rotated ellipsoid: adaptive cubature of t
             r, t, p = u[1], u[2], u[3]
             x = E(r, t, p); d = y .- x; dn = norm(d)
             w = jac(r, t) * ρ(G1, x) / (4π)
-            vcat(w / dn, -w .* d ./ dn^3, w .* vec(3 .* (d * d') ./ dn^5 .- I(3) ./ dn^3))
+            vcat(w / dn, -w .* d ./ dn^3, w .* vec((3 * (d * d') - dn^2 * I) / dn^5))
         end
         lo, hi = inside ? ([1.0, 0, 0], [1 + 8G1.σ / minimum(ax) + 2, π, 2π]) : ([0.0, 0, 0], [1.0, π, 2π])
         v = hcubature(f, lo, hi; rtol = 1e-11, atol = 1e-13, maxevals = 5_000_000)[1]
