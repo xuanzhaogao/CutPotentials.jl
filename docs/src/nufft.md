@@ -82,6 +82,11 @@ Gaussian, the NUFFT at ``10^{-14}``, and errors relative to each field's maximum
   points more.
 - **The default keeps two points of margin** over the Hessian's need, because the fields of a real campaign are
   less smooth than one Gaussian.
+- **Oversampling.** The rule is evaluated at ``\min(\sigma, 1.5)``. FINUFFT's law narrows the window as ``\sigma``
+  grows, which suits the values, but the widths the derivatives need stop falling near ``\sigma = 1.5``: aliased
+  modes are amplified by ``|k + p\,n_f|^d`` in the ``d``-th derivative. At `window_sigma = 2` the value law would give
+  13 / 15 / 17 points, and at `tol` ``10^{-10}`` the Hessian's window error would be ``1.4 \cdot 10^{-10}``. A
+  larger ``\sigma`` therefore only enlarges the grid.
 - **Override it** with `SmoothField(src; window_ns = 16)`. Widths beyond 20 gain nothing: at about ``10^{-13}``
   the error is set by the type-1 NUFFT and the samples.
 
