@@ -61,8 +61,11 @@ struct _Window
     m::Int
 end
 
+# FINUFFT's ES width rule keeps falling with σ, but the widths the gradient and Hessian need stop falling near
+# σ = 1.5 (aliased modes are amplified by |k + p nf|^d), so the rule is evaluated at min(σ, 1.5)
 function _window_params(tolw::Real, sigma::Real; nsmax::Int = 24, taper::Int = 3)
-    ns = clamp(ceil(Int, log(1 / max(Float64(tolw), eps())) / (π * sqrt(1 - 1 / sigma))), 2, nsmax)
+    sr = min(Float64(sigma), 1.5)
+    ns = clamp(ceil(Int, log(1 / max(Float64(tolw), eps())) / (π * sqrt(1 - 1 / sr))), 2, nsmax)
     return _Window(ns, 0.97 * π * ns * (1 - 1 / (2 * sigma)), taper)
 end
 
@@ -180,8 +183,9 @@ gradient ψ and Hessian H, ready for evaluation at any points ([`field_values`](
   NUFFT (FINUFFT, accuracy `tol`) of the charges, times the truncated Laplace kernel 2 (sin(Lk/2)/k)² for |k| ≤
   `kmax` (default `π/h_min`), on one real scalar fine grid (oversampling `window_sigma`). Potential, gradient and
   Hessian are gathered from that grid with the window w, w′ and w″ of an analytic ES window tapered by
-  (1 - z²)^`window_taper`. Its width is FINUFFT's ES rule at the accuracy `window_tol`
-  (`ns = ⌈ln(1/window_tol) / (π √(1 - 1/window_sigma))⌉`, 16 / 18 / 20 points at `tol` 1e-8 / 1e-10 / 1e-12), or
+  (1 - z²)^`window_taper`. Its width is FINUFFT's ES rule at the accuracy `window_tol`, evaluated at σ =
+  min(`window_sigma`, 1.5) because the derivatives' widths stop falling there
+  (`ns = ⌈ln(1/window_tol) / (π √(1 - 1/σ))⌉`, 16 / 18 / 20 points at `tol` 1e-8 / 1e-10 / 1e-12), or
   `window_ns` when given; its shape is `β = 0.97 π ns (1 - 1/(2 window_sigma))`. The taper makes w′ and w″ vanish
   continuously at the ends of the support; without it (`window_taper = 0`) they are singular there and the Hessian
   is wrong.

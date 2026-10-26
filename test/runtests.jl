@@ -75,6 +75,12 @@ want("smooth field") && @testset "smooth field (TKM near, FMM far) against the e
     @test relerr(field_values(FIELD, Yt).hess, Et.hess) < 1e-10
     @test relerr(field_values(F0, Yt).hess, Et.hess) > 1e-3
     @test_throws ArgumentError SmoothField(SRC; window_ns = 1)
+    # above σ = 1.5 the width does not shrink: FINUFFT's value rule (15 points here) leaves the Hessian at 1e-10
+    F2 = SmoothField(SRC; tol = 1e-10, window_sigma = 2)
+    @test F2.win.ns == 18
+    Y2 = hcat(Y, reduce(hcat, [transition_target(F2, Y[:, j], 1e-9) for j in axes(Y, 2)]))
+    V2 = field_values(F2, Y2); E2 = field_values(SmoothField(SRC; tol = 1e-10, window_sigma = 2, window_ns = 24), Y2)
+    @test relerr(V2.hess, E2.hess) < 1e-11
 end
 
 want("box regions") && @testset "box regions: erf/heat-kernel reference" begin
